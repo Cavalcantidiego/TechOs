@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <title>Painel TechOS</title>
+    <link rel="shortcut icon" href="../img/letra-tt.png" type="image/x-icon">
+
+    <!--Bootstrap-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!--CSS interno-->
+    <link rel="stylesheet" href="../../static/css/style.css">
+</head>
+
+<body>
+    <!-- MENU - IGUAL EM TODAS AS PAGINAS -->
+    <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg bg-dark sticky-top" data-bs-theme="dark">
+            <div class="container">
+
+                <a class="navbar-brand" href="#">
+                    <img src="../img/letra-t.png" alt="">
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link  " aria-current="page" href="#">Painel</a>
+                        </li>
+                        <li class="nav-item active border-bottom border-success">
+                            <a class="nav-link" href="#">Clientes</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Equipamentos</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Ordem de Serviços</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <!--Avisos-->
+    <div class="container mt-3">
+        <div class="alert alert-success" role="alert">
+            Salvo com sucesso!
+        </div>
+        <div class="alert alert-danger" role="alert">
+            Algo deu errado!
+        </div>
+    </div>
+
+
+
+    <!--Conteúdo-->
+    <main class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <h1 class="h3">Clientes</h1>
+            <a href="" class="btn btn-success">+ Novo Cliente</a>
+        </div>
+
+        <form class="row mb-3 g-2">
+            <div class="col-12 col-sm-8 col-md-5">
+                <input type="search" name="busca" class="form-control" placeholder="Buscar por nome"
+                    aria-label="Buscar cliente por nome">
+            </div>
+
+            <div class="col-auto">
+                <button class="btn btn-outline-secondary" type="submit">Buscar </button>
+            </div>
+
+        </form>
+
+
+
+        <!--CSS interno- panel, empty- -->
+        <div class="panel">
+            <div class="empty">
+                <p class="fw-semibold">Nenhuma cliente por aqui</p>
+                <p class="text-secundary">Cadastre o primeiro para começar a receber equipamentos.</p>
+                <a href="" class="btn btn-success">Cadastrar Cliente</a>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Telefone</th>
+
+                            <th class="d-none d-md-table-cell">E-mail</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>João e Maria</td>
+                            <td>(11) 99999-9999</td>
+                            <td class="d-none d-md-table-cell">joaomaria@email.com</td>
+                            <td class="text-end text-nowrap">
+                                <a href="" class="btn btn-outline-secondary btn-sm">Editar</a>
+                                <form method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+
+</html>

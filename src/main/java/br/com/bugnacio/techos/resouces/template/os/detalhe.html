@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+ 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <title>Painel TechOS</title>
+    <link rel="shortcut icon" href="../img/letra-tt.png" type="image/x-icon">
+ 
+    <!--Bootstrap-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!--CSS interno-->
+    <link rel="stylesheet" href="../../static/css/style.css">
+</head>
+ 
+<body>
+    <!-- MENU - IGUAL EM TODAS AS PAGINAS -->
+    <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg bg-dark sticky-top" data-bs-theme="dark">
+            <div class="container">
+ 
+                <a class="navbar-brand" href="#">
+                    <img src="../img/letra-t.png" alt="">
+                </a>
+ 
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link  " aria-current="page" href="#">Painel</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Clientes</a>
+                        </li>
+ 
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Equipamentos</a>
+                        </li>
+ 
+                        <li class="nav-item active border-bottom border-success">
+                            <a class="nav-link" href="#">Ordem de Serviços</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </div>
+ 
+    <!--Avisos-->
+    <div class="container mt-3">
+        <div class="alert alert-success" role="alert">
+            Salvo com sucesso!
+        </div>
+        <div class="alert alert-danger" role="alert">
+            Algo deu errado!
+        </div>
+    </div>
+ 
+ 
+    <!--Conteúdo-->
+    <main class="container py-3">
+ 
+        <div class="page-head">
+            <div class="d-flex align-items-center flex-wrap gap-3">
+                <h1 class="h3">Ordem de serviço #1</h1>
+                <span class="badge-status">Recebido</span>
+            </div>
+            <a href="" class="btn btn-success">Voltar para a lista</a>
+        </div>
+ 
+        <!-- Trilha: mostra em que etapa a OS está -->
+        <!-- CSS interno - panel, panel-body, trilho -->
+        <div class="panel mb-3">
+            <div class="panel-body">
+                <ol class="trilho">
+                    <li>Recebido</li>
+                </ol>
+            </div>
+        </div>
+ 
+        <!--CSS interno- panel, empty- -->
+      
+      
+        <div class="row">
+            <div class="col-12 col-lg-6">
+                <div class="panel h-100">
+                    <div class="panel-body">
+                        <h2 class="h6">Dados do atendimento</h2>
+ 
+                        <dl class="dados">
+                            <dt>Cliente</dt>
+                            <dd>João e Maria</dd>
+ 
+                            <dt>Telefone</dt>
+                            <dd>(11) 98858-5562</dd>
+ 
+                            <dt>Equipamentos</dt>
+                            <dd>Notebook Accer Nitro</dd>
+ 
+                            <dt>Nº de série</dt>
+                            <dd>ABC123</dd>
+ 
+                            <dt>Entrada</dt>
+                            <dd>27/10/2026</dd>
+ 
+                            <dt>Defeito</dt>
+                            <dd>Não liga</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+ 
+            <div class="col-12 col-lg-6 d-flex flex-column gap-3">
+                <div class="panel py-3 px-3">
+                    <form method="post">
+                        <h2 class="h6 mb-3">Mudar status</h2>
+                        <div class="d-flex gap-2">
+ 
+                            <select name="status" class="form-select" aria-label="Novo Status">
+                                <option value="">Recebido</option>
+                            </select>
+                            <button class="btn btn-success text-nowrap" type="submit">Atualizar</button>
+                        </div>
+                    </form>
+                </div>
+ 
+                <div class="panel">
+                    <form method="post" class="panel-body">
+                        <h2 class="h6 mb-3"> Diagnóstico e valor</h2>
+                        <label for="diagnóstico" class="form-label">Diagnóstico</label>
+                        <textarea name="diagnóstico" id="diagnóstico" rows="3" class="form-control">
+        </textarea>
+ 
+                        <div class="pt-3 pb-3" style="max-width: 220px;">
+                            <label for="diagnóstico" class="form-label">Valor R$</label>
+                            <input type="number" id="valor" step="0.01" min="0" class="form-control">
+                        </div>
+ 
+                        <button class="btn btn-success" type="submit">Salvar diagnóstico</button>
+                    </form>
+                </div>
+ 
+ 
+            </div>
+ 
+        </div>
+ 
+        
+ 
+    </main>
+ 
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+ 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"></script>
+ 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+ 
+ 
+</html>
+ 
