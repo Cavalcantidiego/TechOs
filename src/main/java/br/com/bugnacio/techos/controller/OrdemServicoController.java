@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@RequestMapping("/os")
+@RequestMapping("/ordens")
 public class OrdemServicoController {
 
     // Endereco: http://localhost:8080/os
