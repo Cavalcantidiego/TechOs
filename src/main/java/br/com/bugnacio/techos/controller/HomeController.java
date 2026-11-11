@@ -2,10 +2,8 @@ package br.com.bugnacio.techos.controller;
 
 // Importa a anotação que transforma a classe em um Controller do Spring
 import org.springframework.stereotype.Controller;
-
 // Importa o Model, usado para enviar dados para o HTML
 import org.springframework.ui.Model;
-
 // Importa a anotação para criar rotas GET
 import org.springframework.web.bind.annotation.GetMapping;
 
