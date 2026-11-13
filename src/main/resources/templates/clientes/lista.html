@@ -10,7 +10,7 @@
 </head>
 
 <!-- PROFESSOR FEZ NO JAVA -->
-<script> 
+<script>
   setTimeout(function () {
     const alerta = document.querySelector('.alert');
 
@@ -57,14 +57,17 @@
 
     <form class="row g-2 mb-3" method="get" th:action="@{/clientes}">
       <div class="col-12 col-sm-8 col-md-5">
+        <!-- oninput: se o campo ficar vazio (apagou o texto ou clicou no "x"),
+         envia o formulário sozinho e volta para a lista completa -->
         <input type="search" name="busca" class="form-control" placeholder="Buscar por nome"
-          aria-label="Buscar cliente por nome" th:value="${busca}">
+          aria-label="Buscar cliente por nome" th:value="${busca}"
+          oninput="if (this.value.trim() === '') this.form.submit()">
       </div>
       <div class="col-auto">
         <button class="btn btn-outline-secondary" type="submit">Buscar</button>
       </div>
     </form>
-
+    
     <div class="panel" th:if="${clientes.isEmpty()}">
       <div class="empty">
         <p class="fw-semibold mb-1">Nenhum cliente por aqui</p>
