@@ -76,7 +76,8 @@
         </div>
         <div class="col-12 col-sm-6">
           <label class="form-label" for="numeroSerie">Número de série</label>
-          <input type="text" id="numeroSerie" class="form-control" th:field="*{numeroSerie}">
+          <input type="text" id="numeroSerie" class="form-control" th:field="*{numeroSerie}" th:errorclass="is-invalid">
+          <div class="invalid-feedback" th:errors="*{numeroSerie}">Informe o número de série.</div>
         </div>
       </div>
 
