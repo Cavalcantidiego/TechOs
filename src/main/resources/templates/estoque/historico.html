@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Histórico do estoque · TechOS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../../static/css/techos.css" th:href="@{/css/techos.css}">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-techos sticky-top" data-bs-theme="dark">
+  <div class="container-xl">
+    <a class="navbar-brand" href="#" th:href="@{/}"><span class="brand-mark">T</span>TechOS</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-label="Abrir menu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="menuPrincipal">
+      <ul class="navbar-nav ms-lg-3">
+        <li class="nav-item"><a class="nav-link" href="#" th:href="@{/}">Painel</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" th:href="@{/clientes}">Clientes</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" th:href="@{/equipamentos}">Equipamentos</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" th:href="@{/os}">Ordens de serviço</a></li>
+        <li class="nav-item"><a class="nav-link active" href="#" th:href="@{/estoque}">Estoque</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<main class="container-xl py-4">
+
+  <div class="page-head d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h3 mb-0">Histórico do estoque</h1>
+      <!-- Quando filtrado por peça (?item=ID) mostra o nome dela -->
+      <p class="text-secondary mb-0" th:if="${itemFiltro != null}"
+         th:text="${itemFiltro.nome} + ' (' + ${itemFiltro.codigo} + ')'">SSD Kingston (SSD-001)</p>
+      <p class="text-secondary mb-0" th:if="${itemFiltro == null}">Últimas 100 movimentações</p>
+    </div>
+    <a class="btn btn-outline-secondary" th:href="@{/estoque}">Voltar</a>
+  </div>
+
+  <div class="panel">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Data e hora</th>
+            <th>Peça</th>
+            <th>Movimento</th>
+            <th class="text-center">Qtd.</th>
+            <th class="text-center">Saldo</th>
+            <th>OS</th>
+            <th>Técnico</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="m : ${movimentos}">
+            <td class="text-nowrap" th:text="${#temporals.format(m.dataHora, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</td>
+            <td>
+              <div class="fw-semibold" th:text="${m.item.nome}">SSD Kingston</div>
+              <div class="text-secondary small" th:text="${m.item.codigo}">SSD-001</div>
+            </td>
+            <td><span class="badge" th:classappend="'text-bg-' + ${m.tipo.cor}" th:text="${m.tipo.descricao}">Entrada</span></td>
+            <td class="text-center fw-semibold" th:text="${m.quantidade}">1</td>
+            <td class="text-center" th:text="${m.saldoApos}">10</td>
+            <td th:text="${m.osId != null} ? '#' + ${m.osId} : '—'">—</td>
+            <td th:text="${m.tecnicoNome != null} ? ${m.tecnicoNome} : '—'">—</td>
+            <td th:text="${m.motivo}">Reposição</td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(movimentos)}">
+            <td colspan="8" class="text-center text-secondary py-4">Nenhuma movimentação registrada.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

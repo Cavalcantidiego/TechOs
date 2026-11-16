@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import br.com.bugnacio.techos.model.Cliente;
 import br.com.bugnacio.techos.repository.ClienteRepository;
@@ -117,12 +118,25 @@ public class ClienteController {
     public String excluir(@PathVariable Long id,
             RedirectAttributes attributes) {
 
-        // Remove o cliente do banco.
-        repo.deleteById(id);
+        try {
+            // Remove o cliente do banco.
+            repo.deleteById(id);
 
-        attributes.addFlashAttribute(
-                "mensagem",
-                "Cliente excluído com sucesso!");
+            // flush: força o banco a validar AGORA, dentro do try.
+            // Sem isso, o erro só apareceria depois e o catch não pegaria.
+            repo.flush();
+
+            attributes.addFlashAttribute(
+                    "mensagem",
+                    "Cliente excluído com sucesso!");
+
+        } catch (DataIntegrityViolationException ex) {
+            // O banco recusou: o cliente tem equipamentos vinculados.
+            attributes.addFlashAttribute(
+                    "erro",
+                    "Este cliente possui equipamentos cadastrados e não pode ser excluído. "
+                            + "Remova ou transfira os equipamentos primeiro.");
+        }
 
         return "redirect:/clientes";
     }

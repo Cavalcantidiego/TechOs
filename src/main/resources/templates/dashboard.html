@@ -22,6 +22,7 @@
         <li class="nav-item"><a class="nav-link" href="#" th:href="@{/clientes}">Clientes</a></li>
         <li class="nav-item"><a class="nav-link" href="#" th:href="@{/equipamentos}">Equipamentos</a></li>
         <li class="nav-item"><a class="nav-link" href="#" th:href="@{/os}">Ordens de serviço</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" th:href="@{/estoque}">Estoque</a></li>
       </ul>
     </div>
   </div>
@@ -44,29 +45,42 @@
     <a class="btn btn-primary" th:href="@{/os/nova}">Nova ordem de serviço</a>
   </div>
 
+  <!-- CARDS DE RESUMO -->
   <div class="row g-3 mb-4">
-    <div class="col-12 col-xl-4">
+    <div class="col-12">
       <div class="stat stat-main">
         <span class="stat-label">Faturamento acumulado</span>
         <span class="stat-value"
               th:text="'R$ ' + ${#numbers.formatDecimal(faturamento ?: 0, 1, 'POINT', 2, 'COMMA')}">R$ 0,00</span>
       </div>
     </div>
-    <div class="col-6 col-md-3 col-xl-2">
+
+    <div class="col-6 col-md">
       <div class="stat"><span class="stat-label">Clientes</span>
         <span class="stat-value" th:text="${totalClientes}">0</span></div>
     </div>
-    <div class="col-6 col-md-3 col-xl-2">
+    <div class="col-6 col-md">
       <div class="stat"><span class="stat-label">Equipamentos</span>
         <span class="stat-value" th:text="${totalEquipamentos}">0</span></div>
     </div>
-    <div class="col-6 col-md-3 col-xl-2">
+    <div class="col-6 col-md">
       <div class="stat"><span class="stat-label">OS abertas</span>
         <span class="stat-value" th:text="${osAbertas}">0</span></div>
     </div>
-    <div class="col-6 col-md-3 col-xl-2">
+    <div class="col-6 col-md">
       <div class="stat"><span class="stat-label">OS concluídas</span>
         <span class="stat-value" th:text="${osConcluidas}">0</span></div>
+    </div>
+
+    <!-- Card de estoque: vermelho se houver item zerado ou baixo; clicar leva ao estoque -->
+    <div class="col-12 col-md">
+      <a th:href="@{/estoque}" class="text-decoration-none">
+        <div class="stat">
+          <span class="stat-label">Estoque baixo</span>
+          <span class="stat-value" th:classappend="${totalAlertasEstoque > 0} ? 'text-danger'"
+                th:text="${totalAlertasEstoque}">0</span>
+        </div>
+      </a>
     </div>
   </div>
 
@@ -108,6 +122,57 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- Itens do estoque que precisam de reposição (máx. 5, os mais críticos primeiro) -->
+  <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+    <h2 class="h5 mb-0">Precisam de reposição</h2>
+    <a th:href="@{/estoque}">Ver estoque</a>
+  </div>
+
+  <div class="panel">
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item d-flex justify-content-between align-items-center"
+          th:each="i : ${alertasEstoque}">
+        <span>
+          <span class="fw-semibold" th:text="${i.nome}">SSD Kingston</span>
+          <span class="text-secondary small ms-1" th:text="${i.codigo}">SSD-001</span>
+        </span>
+        <span>
+          <span th:text="${i.quantidade}">0</span> un.
+          <span class="badge text-bg-danger ms-1" th:if="${i.zerado}">Zerado</span>
+          <span class="badge text-bg-warning ms-1" th:if="${i.baixo}">Baixo</span>
+        </span>
+      </li>
+      <li class="list-group-item text-center text-secondary py-3"
+          th:if="${#lists.isEmpty(alertasEstoque)}">
+        Tudo certo: nenhum item em falta.
+      </li>
+    </ul>
+  </div>
+
+  <!-- NOVO: últimas movimentações do estoque (entradas agora; saídas quando a OS existir) -->
+  <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+    <h2 class="h5 mb-0">Últimas movimentações do estoque</h2>
+    <a th:href="@{/estoque/historico}">Ver histórico</a>
+  </div>
+
+  <div class="panel">
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item d-flex justify-content-between align-items-center"
+          th:each="m : ${ultimasMovimentacoes}">
+        <span>
+          <span class="badge me-2" th:classappend="'text-bg-' + ${m.tipo.cor}" th:text="${m.tipo.descricao}">Entrada</span>
+          <span class="fw-semibold" th:text="${m.item.nome}">SSD Kingston</span>
+          <span class="text-secondary small ms-1" th:if="${m.osId != null}" th:text="'OS #' + ${m.osId}">OS #1</span>
+        </span>
+        <span class="text-secondary small"
+              th:text="${m.quantidade} + ' un. · ' + ${#temporals.format(m.dataHora, 'dd/MM HH:mm')}">1 un. · 01/01 10:00</span>
+      </li>
+      <li class="list-group-item text-center text-secondary py-3" th:if="${#lists.isEmpty(ultimasMovimentacoes)}">
+        Nenhuma movimentação ainda.
+      </li>
+    </ul>
   </div>
 
 </main>
