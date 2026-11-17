@@ -113,10 +113,10 @@
         <tbody>
           <tr th:each="os : ${ultimasOs}">
             <td><a th:href="@{/os/{id}(id=${os.id})}" th:text="'#' + ${os.id}">#1</a></td>
-            <td th:text="${os.equipamento.cliente.nome}">Maria</td>
+            <td th:text="${os.equipamento.cliente?.nome}">Maria</td>
             <td class="d-none d-md-table-cell" th:text="${os.equipamento.marca} + ' ' + ${os.equipamento.modelo}">Dell Inspiron</td>
             <td class="d-none d-md-table-cell" th:text="${#temporals.format(os.dataEntrada, 'dd/MM/yyyy')}">01/01/2026</td>
-            <td><span class="badge-status" th:classappend="\'st-\' + ${os.status.name()}" th:text="${os.status.descricao}">Recebido</span></td>
+            <td><span class="badge" th:classappend="'text-bg-' + ${os.status.cor}" th:text="${os.status.descricao}">Recebido</span></td>
             <td class="text-end" th:text="${os.valor != null} ? 'R$ ' + ${#numbers.formatDecimal(os.valor, 1, 'POINT', 2, 'COMMA')} : '—'">R$ 0,00</td>
           </tr>
         </tbody>

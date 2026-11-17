@@ -22,6 +22,7 @@ import br.com.bugnacio.techos.model.TipoEquipamento;
 import br.com.bugnacio.techos.repository.ClienteRepository;
 import br.com.bugnacio.techos.repository.EquipamentoRepository;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @Controller
 @RequestMapping("/equipamentos")
@@ -146,11 +147,17 @@ public class EquipamentoController {
         return "equipamentos/form";
     }
 
-    // DELETE.
+        // DELETE: equipamento com OS não pode ser apagado (o banco protege o vínculo).
     @PostMapping("/{id}/excluir")
     public String excluir(@PathVariable("id") Long id, RedirectAttributes redirect) {
-        repo.deleteById(id);
-        redirect.addFlashAttribute("mensagem", "Equipamento excluído.");
+        try {
+            repo.deleteById(id);
+            repo.flush();
+            redirect.addFlashAttribute("mensagem", "Equipamento excluído.");
+        } catch (DataIntegrityViolationException ex) {
+            redirect.addFlashAttribute("erro",
+                    "Este equipamento possui ordens de serviço e não pode ser excluído.");
+        }
         return "redirect:/equipamentos";
     }
 }
