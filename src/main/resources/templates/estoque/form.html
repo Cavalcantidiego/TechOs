@@ -53,12 +53,12 @@
         <div class="row g-3 mb-3">
           <div class="col-12 col-sm-7">
             <label class="form-label" for="nome">Nome</label>
-            <input type="text" id="nome" class="form-control" th:field="*{nome}" th:errorclass="is-invalid">
+            <input type="text" id="nome" maxlength="100" class="form-control" th:field="*{nome}" th:errorclass="is-invalid">
             <div class="invalid-feedback" th:errors="*{nome}">Informe o nome.</div>
           </div>
           <div class="col-12 col-sm-5">
             <label class="form-label" for="codigo">Código</label>
-            <input type="text" id="codigo" class="form-control" th:field="*{codigo}" th:errorclass="is-invalid">
+            <input type="text" id="codigo" maxlength="50" class="form-control" th:field="*{codigo}" th:errorclass="is-invalid">
             <div class="invalid-feedback" th:errors="*{codigo}">Informe o código.</div>
           </div>
         </div>

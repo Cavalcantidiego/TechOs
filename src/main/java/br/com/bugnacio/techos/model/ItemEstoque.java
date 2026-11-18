@@ -11,86 +11,83 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
-// @Entity: esta classe vira a tabela "item_estoque" no MySQL (criada pelo Hibernate).
 @Entity
 public class ItemEstoque {
 
-    // Chave primária, gerada automaticamente pelo banco (AUTO_INCREMENT).
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // @NotBlank: não aceita vazio nem só espaços. A mensagem aparece no formulário.
     @NotBlank(message = "Informe o nome do item.")
+    @Size(min = 3, max = 100, message = "O nome deve ter entre 3 e 100 caracteres.")
     private String nome;
 
-    // unique = true: o banco recusa dois itens com o mesmo código (proteção extra).
     @NotBlank(message = "Informe o código.")
+    @Size(max = 30, message = "O código pode ter no máximo 30 caracteres.")
+    @Pattern(regexp = "^[A-Za-z0-9._-]*$",
+             message = "Use apenas letras, números, ponto, hífen e sublinhado (sem espaços).")
     @Column(unique = true)
     private String codigo;
 
-    // Código de barras de fábrica (EAN). Opcional, mas único quando preenchido.
+    // Opcional. Se preenchido, 4 a 50 caracteres sem espaços.
+    @Pattern(regexp = "^[A-Za-z0-9._-]{4,50}$",
+             message = "Código de barras inválido (4 a 50 caracteres, sem espaços).")
     @Column(unique = true)
     private String codigoBarras;
 
-    // EnumType.STRING: grava o texto ("PECA") no banco, não o número da posição.
     @NotNull(message = "Selecione a categoria.")
     @Enumerated(EnumType.STRING)
     private Estoque categoria;
 
-    // @Min(0): não aceita quantidade negativa.
     @NotNull(message = "Informe a quantidade.")
     @Min(value = 0, message = "A quantidade não pode ser negativa.")
+    @Max(value = 100000, message = "A quantidade máxima é 100000.")
     private Integer quantidade = 0;
 
-    // Quando a quantidade chega neste valor (ou menos), o item é marcado como "Baixo".
     @NotNull(message = "Informe o estoque mínimo.")
     @Min(value = 0, message = "O estoque mínimo não pode ser negativo.")
+    @Max(value = 100000, message = "O estoque mínimo máximo é 100000.")
     private Integer estoqueMinimo = 1;
 
-    // BigDecimal: tipo correto para dinheiro (double perde precisão nos centavos).
     @NotNull(message = "Informe o preço de custo.")
-    @DecimalMin(value = "0.00", message = "O preço não pode ser negativo.")
-    private BigDecimal precoCusto = BigDecimal.ZERO;
+    @DecimalMin(value = "0.01", message = "O preço de custo deve ser maior que zero.")
+    @Digits(integer = 8, fraction = 2, message = "Preço inválido.")
+    private BigDecimal precoCusto;
 
     @NotNull(message = "Informe o preço de venda.")
-    @DecimalMin(value = "0.00", message = "O preço não pode ser negativo.")
-    private BigDecimal precoVenda = BigDecimal.ZERO;
+    @DecimalMin(value = "0.01", message = "O preço de venda deve ser maior que zero.")
+    @Digits(integer = 8, fraction = 2, message = "Preço inválido.")
+    private BigDecimal precoVenda;
 
-    // NOVO: quanto está reservado por OS abertas.
-    // @Transient: NÃO vira coluna no banco. O controller preenche na hora de listar.
+    // Reservado por OS abertas. Não vai para o banco: o controller preenche.
     @Transient
     private int reservado = 0;
 
-    // ---- Métodos auxiliares usados na tela (o HTML lê como i.zerado, i.baixo) ----
-
-    // Zerado: acabou o estoque.
     public boolean isZerado() {
         return quantidade != null && quantidade == 0;
     }
 
-    // Baixo: ainda tem, mas está no mínimo ou abaixo dele.
     public boolean isBaixo() {
         return quantidade != null && estoqueMinimo != null
                 && quantidade > 0 && quantidade <= estoqueMinimo;
     }
 
-    // Valor parado em estoque = custo x quantidade (usado no card do topo).
     public BigDecimal getValorTotal() {
         if (quantidade == null || precoCusto == null) return BigDecimal.ZERO;
         return precoCusto.multiply(BigDecimal.valueOf(quantidade));
     }
 
-    // NOVO: o que de fato pode ser prometido a uma nova OS (físico menos reservado).
     public int getDisponivel() {
         return (quantidade == null ? 0 : quantidade) - reservado;
     }
-
-    // ---- Getters e setters (o Spring/Thymeleaf usam para ler e preencher os campos) ----
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -122,7 +119,6 @@ public class ItemEstoque {
     public BigDecimal getPrecoVenda() { return precoVenda; }
     public void setPrecoVenda(BigDecimal precoVenda) { this.precoVenda = precoVenda; }
 
-    // NOVO
     public int getReservado() { return reservado; }
     public void setReservado(int reservado) { this.reservado = reservado; }
 }

@@ -74,22 +74,34 @@ public class OrdemServicoService {
         pecaRepo.delete(peca);
     }
 
-    // ---------- Mudar status (é aqui que o estoque é baixado ou devolvido) ----------
+        // ---------- Mudar status (é aqui que o estoque é baixado ou devolvido) ----------
     @Transactional
     public void mudarStatus(Long osId, StatusOS novo) {
         OrdemServico os = buscar(osId);
         StatusOS atual = os.getStatus();
 
         if (atual == novo) return;
-        if (atual == StatusOS.CANCELADA) {
-            throw new IllegalArgumentException("OS cancelada não pode ser alterada.");
+
+        // Para concluir, o laudo e o valor do serviço são obrigatórios
+        if (novo.isFinalizada() && !atual.isFinalizada()) {
+            if (os.getLaudo() == null || os.getLaudo().isBlank() || os.getValor() == null) {
+                throw new IllegalArgumentException(
+                        "Para concluir a OS, preencha o laudo técnico e o valor do serviço (Editar dados).");
+            }
         }
 
         List<PecaUsada> pecas = pecaRepo.findByOsIdOrderByIdAsc(osId);
         String tecnico = os.getTecnicoNome();
 
+        // Reabrindo uma OS cancelada: reserva as peças de novo.
+        // Se faltar alguma, lança erro e NADA é alterado (transação).
+        if (atual == StatusOS.CANCELADA) {
+            for (PecaUsada p : pecas) {
+                estoque.reservar(p.getItem().getId(), p.getQuantidade(), osId, null, tecnico);
+            }
+        }
+
         if (novo == StatusOS.CANCELADA) {
-            // Já baixada: a peça volta ao estoque. Ainda reservada: só libera a reserva.
             for (PecaUsada p : pecas) {
                 if (os.isBaixado()) {
                     estoque.devolverDaOs(p.getItem().getId(), p.getQuantidade(), osId, null, tecnico);
@@ -101,7 +113,6 @@ public class OrdemServicoService {
             os.setDataConclusao(null);
 
         } else if (novo.isFinalizada()) {
-            // Concluída/Entregue: as peças saem do estoque (uma vez só)
             if (!os.isBaixado()) {
                 for (PecaUsada p : pecas) {
                     estoque.baixarParaOs(p.getItem().getId(), p.getQuantidade(), osId, null, tecnico);
@@ -113,7 +124,6 @@ public class OrdemServicoService {
             }
 
         } else if (os.isBaixado()) {
-            // Reabriu uma OS concluída: devolve as peças e volta a reservá-las
             for (PecaUsada p : pecas) {
                 estoque.devolverDaOs(p.getItem().getId(), p.getQuantidade(), osId, null, tecnico);
                 estoque.reservar(p.getItem().getId(), p.getQuantidade(), osId, null, tecnico);
@@ -124,6 +134,26 @@ public class OrdemServicoService {
 
         os.setStatus(novo);
         osRepo.save(os);
+    }
+
+    // ---------- Excluir OS: devolve/libera as peças e apaga ----------
+    // OS cancelada já liberou as peças, então só apaga.
+    @Transactional
+    public void excluir(Long osId) {
+        OrdemServico os = buscar(osId);
+        List<PecaUsada> pecas = pecaRepo.findByOsIdOrderByIdAsc(osId);
+
+        if (os.getStatus() != StatusOS.CANCELADA) {
+            for (PecaUsada p : pecas) {
+                if (os.isBaixado()) {
+                    estoque.devolverDaOs(p.getItem().getId(), p.getQuantidade(), osId, null, os.getTecnicoNome());
+                } else {
+                    estoque.liberarReserva(p.getItem().getId(), osId, "OS #" + osId + " excluída");
+                }
+            }
+        }
+        pecaRepo.deleteAll(pecas);
+        osRepo.delete(os);
     }
 
     // ---------- Internos ----------

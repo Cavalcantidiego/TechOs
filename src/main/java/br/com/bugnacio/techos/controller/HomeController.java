@@ -1,6 +1,7 @@
 package br.com.bugnacio.techos.controller;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.List;
 
@@ -48,39 +49,50 @@ public class HomeController {
     @GetMapping("/")
     public String inicio(Model model) {
 
-        long totalClientes = clienteRepository.count();
-        long totalEquipamentos = equipamentoRepository.count();
+        // ----- OS -----
+        List<OrdemServico> todas = osRepository.findAll();
+        List<StatusOS> emAndamento = List.of(
+                StatusOS.RECEBIDO, StatusOS.EM_ANALISE, StatusOS.AGUARDANDO_PECA, StatusOS.EM_REPARO);
 
-        // Estoque: itens zerados ou abaixo do mínimo (os mais críticos primeiro)
+        long abertas = todas.stream().filter(o -> emAndamento.contains(o.getStatus())).count();
+        long aguardandoPeca = todas.stream().filter(o -> o.getStatus() == StatusOS.AGUARDANDO_PECA).count();
+        long prontas = todas.stream().filter(o -> o.getStatus() == StatusOS.CONCLUIDA).count();
+
+        // Faturamento: soma do valor das OS Concluídas e Entregues
+        List<OrdemServico> finalizadas = todas.stream().filter(o -> o.getStatus().isFinalizada()).toList();
+        BigDecimal acumulado = finalizadas.stream()
+                .map(OrdemServico::getValor)
+                .filter(v -> v != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        YearMonth mesAtual = YearMonth.now();
+        BigDecimal doMes = finalizadas.stream()
+                .filter(o -> o.getDataConclusao() != null && YearMonth.from(o.getDataConclusao()).equals(mesAtual))
+                .map(OrdemServico::getValor)
+                .filter(v -> v != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // ----- Estoque -----
         List<ItemEstoque> alertasEstoque = itemEstoqueRepository.findAll().stream()
                 .filter(i -> i.isZerado() || i.isBaixo())
                 .sorted(Comparator.comparing(ItemEstoque::getQuantidade))
                 .toList();
 
-        // OS: abertas = ainda em andamento; concluídas = Concluída ou Entregue
-        List<OrdemServico> abertas = osRepository.findByStatusIn(List.of(
-                StatusOS.RECEBIDO, StatusOS.EM_ANALISE, StatusOS.AGUARDANDO_PECA, StatusOS.EM_REPARO));
-        List<OrdemServico> concluidas = osRepository.findByStatusIn(List.of(
-                StatusOS.CONCLUIDA, StatusOS.ENTREGUE));
+        List<MovimentoEstoque> ultimasMov = movimentoRepository.findTop5ByOrderByDataHoraDesc();
 
-        // Faturamento = soma do valor das OS concluídas e entregues
-        BigDecimal faturamento = concluidas.stream()
-                .map(OrdemServico::getValor)
-                .filter(v -> v != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        model.addAttribute("totalClientes", totalClientes);
-        model.addAttribute("totalEquipamentos", totalEquipamentos);
-        model.addAttribute("osAbertas", abertas.size());
-        model.addAttribute("osConcluidas", concluidas.size());
-        model.addAttribute("faturamento", faturamento);
+        // ----- Envia para a tela -----
+        model.addAttribute("faturamentoMes", doMes);
+        model.addAttribute("faturamento", acumulado);
+        model.addAttribute("osAbertas", abertas);
+        model.addAttribute("osAguardandoPeca", aguardandoPeca);
+        model.addAttribute("osProntas", prontas);
+        model.addAttribute("totalClientes", clienteRepository.count());
+        model.addAttribute("totalEquipamentos", equipamentoRepository.count());
         model.addAttribute("ultimasOs", osRepository.findTop5ByOrderByDataEntradaDesc());
 
         model.addAttribute("totalAlertasEstoque", alertasEstoque.size());
         model.addAttribute("alertasEstoque", alertasEstoque.stream().limit(5).toList());
         model.addAttribute("pecasReservadas", reservaRepository.totalGeralReservado());
-
-        List<MovimentoEstoque> ultimasMov = movimentoRepository.findTop5ByOrderByDataHoraDesc();
         model.addAttribute("ultimasMovimentacoes", ultimasMov);
 
         return "dashboard";

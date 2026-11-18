@@ -31,15 +31,15 @@
 
   <div class="page-head">
     <h1 class="h3" th:text="${os.id == null} ? 'Nova ordem de serviço' : 'Editar OS #' + ${os.id}">Nova ordem de serviço</h1>
+    <p class="text-secondary mb-0">Campos com <span class="text-danger">*</span> são obrigatórios.</p>
   </div>
 
   <div class="panel" style="max-width:720px">
     <form class="panel-body" method="post" th:action="@{/os/salvar}" th:object="${os}" novalidate>
       <input type="hidden" th:field="*{id}">
 
-      <!-- name="equipamento.id": o Spring monta o Equipamento só com o id -->
       <div class="mb-3">
-        <label class="form-label" for="equipamento">Equipamento</label>
+        <label class="form-label" for="equipamento">Equipamento <span class="text-danger">*</span></label>
         <select id="equipamento" name="equipamento.id" class="form-select"
                 th:classappend="${#fields.hasErrors('equipamento')} ? 'is-invalid'">
           <option value="">Escolha o equipamento</option>
@@ -52,26 +52,39 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="defeito">Defeito relatado pelo cliente</label>
-        <textarea id="defeito" rows="3" class="form-control" th:field="*{defeito}" th:errorclass="is-invalid"></textarea>
+        <label class="form-label" for="defeito">Defeito relatado pelo cliente <span class="text-danger">*</span></label>
+        <textarea id="defeito" rows="3" maxlength="1000" class="form-control" th:field="*{defeito}" th:errorclass="is-invalid"
+                  placeholder="Ex.: Notebook não liga, sem sinal de energia"></textarea>
         <div class="invalid-feedback" th:errors="*{defeito}">Descreva o defeito.</div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label" for="laudo">Laudo técnico (opcional)</label>
-        <textarea id="laudo" rows="3" class="form-control" th:field="*{laudo}"
+        <label class="form-label" for="laudo">Laudo técnico <span class="text-secondary small">(obrigatório para concluir a OS)</span></label>
+        <textarea id="laudo" rows="3" maxlength="2000" class="form-control" th:field="*{laudo}" th:errorclass="is-invalid"
                   placeholder="O que o técnico encontrou e fez"></textarea>
+        <div class="invalid-feedback" th:errors="*{laudo}">Laudo inválido.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="tecnicoNome">Técnico responsável <span class="text-danger">*</span></label>
+        <input type="text" id="tecnicoNome" maxlength="100" class="form-control"
+               th:field="*{tecnicoNome}" th:errorclass="is-invalid"
+               placeholder="Nome completo do técnico (ex.: João da Silva Santos)">
+        <div class="invalid-feedback" th:errors="*{tecnicoNome}">Informe o nome completo do técnico.</div>
       </div>
 
       <div class="row g-3 mb-4">
-        <div class="col-12 col-sm-7">
-          <label class="form-label" for="tecnicoNome">Técnico responsável</label>
-          <input type="text" id="tecnicoNome" class="form-control" th:field="*{tecnicoNome}">
-        </div>
-        <div class="col-12 col-sm-5">
-          <label class="form-label" for="valor">Valor do serviço (R$)</label>
-          <input type="number" step="0.01" min="0" id="valor" class="form-control" th:field="*{valor}" th:errorclass="is-invalid">
+        <div class="col-12 col-sm-6">
+          <label class="form-label" for="valor">Valor do serviço (R$) <span class="text-secondary small">(obrigatório para concluir)</span></label>
+          <input type="number" step="0.01" min="0" max="999999.99" id="valor" class="form-control"
+                 th:field="*{valor}" th:errorclass="is-invalid">
           <div class="invalid-feedback" th:errors="*{valor}">Valor inválido.</div>
+        </div>
+        <div class="col-12 col-sm-6">
+          <label class="form-label" for="garantiaDias">Garantia (dias) <span class="text-danger">*</span></label>
+          <input type="number" min="0" max="365" id="garantiaDias" class="form-control"
+                 th:field="*{garantiaDias}" th:errorclass="is-invalid">
+          <div class="invalid-feedback" th:errors="*{garantiaDias}">Valor inválido.</div>
         </div>
       </div>
 
