@@ -49,22 +49,29 @@
     <!-- CARDS DE RESUMO -->
     <div class="row g-3 mb-4">
       <div class="col-12 col-md-4">
-        <div class="panel"><div class="panel-body">
-          <div class="text-secondary small">Itens cadastrados</div>
-          <div class="h3 mb-0" th:text="${totalItens}">0</div>
-        </div></div>
+        <div class="panel">
+          <div class="panel-body">
+            <div class="text-secondary small">Itens cadastrados</div>
+            <div class="h3 mb-0" th:text="${totalItens}">0</div>
+          </div>
+        </div>
       </div>
       <div class="col-12 col-md-4">
-        <div class="panel"><div class="panel-body">
-          <div class="text-secondary small">Estoque baixo ou zerado</div>
-          <div class="h3 mb-0" th:classappend="${totalBaixos > 0} ? 'text-danger'" th:text="${totalBaixos}">0</div>
-        </div></div>
+        <div class="panel">
+          <div class="panel-body">
+            <div class="text-secondary small">Estoque baixo ou zerado</div>
+            <div class="h3 mb-0" th:classappend="${totalBaixos > 0} ? 'text-danger'" th:text="${totalBaixos}">0</div>
+          </div>
+        </div>
       </div>
       <div class="col-12 col-md-4">
-        <div class="panel"><div class="panel-body">
-          <div class="text-secondary small">Valor em estoque (custo)</div>
-          <div class="h3 mb-0" th:text="'R$ ' + ${#numbers.formatDecimal(valorTotal, 1, 'POINT', 2, 'COMMA')}">R$ 0,00</div>
-        </div></div>
+        <div class="panel">
+          <div class="panel-body">
+            <div class="text-secondary small">Valor em estoque (custo)</div>
+            <div class="h3 mb-0" th:text="'R$ ' + ${#numbers.formatDecimal(valorTotal, 1, 'POINT', 2, 'COMMA')}">R$ 0,00
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -106,8 +113,8 @@
               <!-- Quantidade física; se houver reserva de OS, mostra quanto está separado -->
               <td class="text-center">
                 <div class="fw-semibold" th:text="${i.quantidade}">10</div>
-                <div class="text-secondary small" th:if="${i.reservado > 0}"
-                     th:text="${i.reservado} + ' reservada(s)'">2 reservadas</div>
+                <div class="text-secondary small" th:if="${i.reservado > 0}" th:text="${i.reservado} + ' reservada(s)'">
+                  2 reservadas</div>
               </td>
 
               <td>
@@ -132,10 +139,29 @@
 
               <td class="text-end text-nowrap">
                 <a class="btn btn-sm btn-outline-secondary" th:href="@{/estoque/historico(item=${i.id})}">Histórico</a>
-                <a class="btn btn-sm btn-outline-secondary" th:href="@{/estoque/{id}/editar(id=${i.id})}">Editar</a>
+
+                <a class="btn btn-sm btn-outline-secondary" th:if="${!i.inativo}"
+                  th:href="@{/estoque/{id}/editar(id=${i.id})}">Editar</a>
+
+                <button type="button" class="btn btn-sm btn-outline-warning" th:if="${!i.inativo}"
+                  data-bs-toggle="modal" data-bs-target="#modalBaixa" th:data-acao="@{/estoque/{id}/baixa(id=${i.id})}"
+                  th:data-nome="${i.nome}" th:data-disp="${i.disponivel}">Baixa</button>
+
+                <form method="post" th:action="@{/estoque/{id}/inativar(id=${i.id})}" class="d-inline"
+                  th:if="${!i.inativo}"
+                  onsubmit="return confirm('Inativar este item? Ele some das listas, mas o histórico fica.')">
+                  <button class="btn btn-sm btn-outline-secondary" type="submit">Inativar</button>
+                </form>
+
+                <form method="post" th:action="@{/estoque/{id}/reativar(id=${i.id})}" class="d-inline"
+                  th:if="${i.inativo}">
+                  <button class="btn btn-sm btn-outline-success" type="submit">Reativar</button>
+                </form>
+
+                <!-- EXCLUIR: aparece em todo item -->
                 <form method="post" th:action="@{/estoque/{id}/excluir(id=${i.id})}" class="d-inline"
-                  onsubmit="return confirm('Excluir este item?')">
-                  <button class="btn btn-sm btn-outline-danger" type="submit">Excluir</button>
+                  onsubmit="return confirm('Excluir este item e todo o histórico dele? Não dá para desfazer.')">
+                  <button class="btn btn-sm btn-danger" type="submit">Excluir</button>
                 </form>
               </td>
             </tr>

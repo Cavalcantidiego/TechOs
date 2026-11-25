@@ -5,12 +5,11 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.text.NumberFormat;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -24,17 +23,16 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import br.com.bugnacio.techos.model.Equipamento;
-import br.com.bugnacio.techos.model.ItemEstoque;
 import br.com.bugnacio.techos.model.OrdemServico;
 import br.com.bugnacio.techos.model.StatusOS;
 import br.com.bugnacio.techos.repository.EquipamentoRepository;
-import br.com.bugnacio.techos.repository.ItemEstoqueRepository;
 import br.com.bugnacio.techos.repository.OrdemServicoRepository;
 import br.com.bugnacio.techos.repository.PecaUsadaRepository;
-import br.com.bugnacio.techos.repository.ReservaEstoqueRepository;
+import br.com.bugnacio.techos.service.AnexoOsService;
 import br.com.bugnacio.techos.service.OrdemServicoService;
 import jakarta.validation.Valid;
 
@@ -45,39 +43,41 @@ public class OrdemServicoController {
     private final OrdemServicoRepository osRepo;
     private final PecaUsadaRepository pecaRepo;
     private final EquipamentoRepository equipamentoRepo;
-    private final ItemEstoqueRepository itemRepo;
-    private final ReservaEstoqueRepository reservaRepo;
     private final OrdemServicoService osService;
+    private final AnexoOsService anexoService;
     private final String dddPadrao;
     private final String senhaAdmin;
 
     public OrdemServicoController(OrdemServicoRepository osRepo, PecaUsadaRepository pecaRepo,
-            EquipamentoRepository equipamentoRepo, ItemEstoqueRepository itemRepo,
-            ReservaEstoqueRepository reservaRepo, OrdemServicoService osService,
+            EquipamentoRepository equipamentoRepo, OrdemServicoService osService,
+            AnexoOsService anexoService,
             @Value("${techos.ddd-padrao:}") String dddPadrao,
             @Value("${techos.senha-admin:}") String senhaAdmin) {
         this.osRepo = osRepo;
         this.pecaRepo = pecaRepo;
         this.equipamentoRepo = equipamentoRepo;
-        this.itemRepo = itemRepo;
-        this.reservaRepo = reservaRepo;
         this.osService = osService;
+        this.anexoService = anexoService;
         this.dddPadrao = dddPadrao == null ? "" : dddPadrao.trim();
         this.senhaAdmin = senhaAdmin == null ? "" : senhaAdmin;
     }
 
-    // Confere a senha de administrador (lida do application.properties)
+    // ---------- Senha de administrador ----------
     private boolean senhaOk(String informada) {
         if (senhaAdmin.isBlank() || informada == null) return false;
-        return MessageDigest.isEqual(
-                senhaAdmin.getBytes(StandardCharsets.UTF_8),
+        return MessageDigest.isEqual(senhaAdmin.getBytes(StandardCharsets.UTF_8),
                 informada.getBytes(StandardCharsets.UTF_8));
     }
 
-    private String erroSenha() {
-        return senhaAdmin.isBlank()
-                ? " Coloque a Senha de administrador (techos.senha-admin no application.properties)."
-                : "Senha incorreta.";
+    // Aqui você muda os textos de erro da senha
+    private String erroSenha(String informada) {
+        if (senhaAdmin.isBlank()) {
+            return "Senha de administrador não configurada (techos.senha-admin no application.properties).";
+        }
+        if (informada == null || informada.isBlank()) {
+            return "Digite a senha de administrador para continuar.";
+        }
+        return "Senha incorreta. Tente novamente.";
     }
 
     // ---------- LISTA ----------
@@ -86,12 +86,11 @@ public class OrdemServicoController {
             @RequestParam(value = "status", required = false) StatusOS status, Model model) {
 
         List<OrdemServico> lista = osRepo.findAll(Sort.by(Sort.Direction.DESC, "id"));
-
         if (status != null) {
             lista = lista.stream().filter(o -> o.getStatus() == status).toList();
         }
         if (busca != null && !busca.isBlank()) {
-            String b = busca.trim().toLowerCase().replace("#", "");
+            String b = norm(busca.trim()).replace("#", "");
             lista = lista.stream().filter(o -> corresponde(o, b)).toList();
         }
 
@@ -102,17 +101,21 @@ public class OrdemServicoController {
         return "os/lista";
     }
 
+    // Minúsculas e sem acento, para "joao" achar "João"
+    private static String norm(String t) {
+        if (t == null) return "";
+        return Normalizer.normalize(t, Normalizer.Form.NFD).replaceAll("\\p{M}", "").toLowerCase();
+    }
+
     private boolean corresponde(OrdemServico o, String b) {
         Equipamento e = o.getEquipamento();
         return String.valueOf(o.getId()).equals(b)
-                || contem(e.getMarca(), b)
-                || contem(e.getModelo(), b)
-                || contem(e.getNumeroSerie(), b)
+                || contem(e.getMarca(), b) || contem(e.getModelo(), b) || contem(e.getNumeroSerie(), b)
                 || (e.getCliente() != null && contem(e.getCliente().getNome(), b));
     }
 
     private boolean contem(String texto, String b) {
-        return texto != null && texto.toLowerCase().contains(b);
+        return norm(texto).contains(b);
     }
 
     // ---------- NOVA ----------
@@ -123,9 +126,10 @@ public class OrdemServicoController {
         return "os/form";
     }
 
-    // ---------- SALVAR (nova ou edição) ----------
+    // ---------- SALVAR (com fotos opcionais) ----------
     @PostMapping("/salvar")
     public String salvar(@Valid @ModelAttribute("os") OrdemServico form, BindingResult result,
+            @RequestParam(value = "fotos", required = false) List<MultipartFile> fotos,
             Model model, RedirectAttributes redirect) {
 
         Long equipamentoId = form.getEquipamento() == null ? null : form.getEquipamento().getId();
@@ -140,7 +144,6 @@ public class OrdemServicoController {
                 result.rejectValue("equipamento", "invalido", "Equipamento não encontrado.");
             }
         }
-
         if (result.hasErrors()) {
             carregarEquipamentos(model);
             return "os/form";
@@ -159,7 +162,6 @@ public class OrdemServicoController {
             os = existente.get();
         }
 
-        // Copia só os campos editáveis (status, peças e baixa NÃO vêm do formulário)
         os.setEquipamento(equipamento);
         os.setDefeito(form.getDefeito().trim());
         os.setLaudo(form.getLaudo() == null || form.getLaudo().isBlank() ? null : form.getLaudo().trim());
@@ -168,9 +170,24 @@ public class OrdemServicoController {
         os.setGarantiaDias(form.getGarantiaDias());
 
         OrdemServico salva = osRepo.save(os);
-        redirect.addFlashAttribute("mensagem",
-                nova ? "OS #" + salva.getId() + " aberta. Adicione as peças, se precisar."
-                        : "OS #" + salva.getId() + " atualizada.");
+
+        String msg = nova ? "OS #" + salva.getId() + " aberta. Adicione as peças, se precisar."
+                : "OS #" + salva.getId() + " atualizada.";
+
+        // Fotos enviadas junto com o formulário (opcional)
+        if (fotos != null && fotos.stream().anyMatch(f -> !f.isEmpty())) {
+            try {
+                AnexoOsService.Resultado r = anexoService.salvar(salva, fotos);
+                if (r.salvos() > 0) msg += " " + r.salvos() + " foto(s) enviada(s).";
+                if (!r.recusados().isEmpty()) {
+                    redirect.addFlashAttribute("erro", "Não enviado(s): " + String.join(", ", r.recusados())
+                            + ". Aceitamos JPG, PNG, WEBP e GIF (máximo " + AnexoOsService.MAX_POR_OS + " fotos por OS).");
+                }
+            } catch (IllegalStateException ex) {
+                redirect.addFlashAttribute("erro", ex.getMessage());
+            }
+        }
+        redirect.addFlashAttribute("mensagem", msg);
         return "redirect:/os/" + salva.getId();
     }
 
@@ -197,28 +214,8 @@ public class OrdemServicoController {
         }
         OrdemServico os = opt.get();
 
-        Map<Long, Long> reservas = new HashMap<>();
-        for (Object[] linha : reservaRepo.totalReservadoPorItem()) {
-            reservas.put((Long) linha[0], (Long) linha[1]);
-        }
-        List<ItemEstoque> itens = itemRepo.findAll(Sort.by("nome"));
-        itens.forEach(i -> i.setReservado(reservas.getOrDefault(i.getId(), 0L).intValue()));
-
-        List<Map<String, Object>> pecasBusca = itens.stream()
-                .filter(i -> i.getDisponivel() > 0)
-                .map(i -> {
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("codigo", i.getCodigo());
-                    m.put("nome", i.getNome());
-                    m.put("barras", i.getCodigoBarras() == null ? "" : i.getCodigoBarras());
-                    m.put("disp", i.getDisponivel());
-                    return m;
-                })
-                .toList();
-
         model.addAttribute("os", os);
         model.addAttribute("pecas", pecaRepo.findByOsIdOrderByIdAsc(id));
-        model.addAttribute("pecasBusca", pecasBusca);
         model.addAttribute("statusLista", StatusOS.values());
         model.addAttribute("garantiaAte", os.getGarantiaAte());
 
@@ -245,22 +242,18 @@ public class OrdemServicoController {
     // ---------- MUDAR STATUS (reativar uma OS cancelada exige a senha) ----------
     @PostMapping("/{id}/status")
     public String mudarStatus(@PathVariable("id") Long id, @RequestParam("status") StatusOS status,
-            @RequestParam(value = "senha", required = false) String senha,
-            RedirectAttributes redirect) {
+            @RequestParam(value = "senha", required = false) String senha, RedirectAttributes redirect) {
 
         Optional<OrdemServico> atual = osRepo.findById(id);
         if (atual.isPresent() && atual.get().getStatus() == StatusOS.CANCELADA
                 && status != StatusOS.CANCELADA && !senhaOk(senha)) {
-            redirect.addFlashAttribute("erro", "Para reativar uma OS cancelada: " + erroSenha());
+            redirect.addFlashAttribute("erro", "Para reativar uma OS cancelada: " + erroSenha(senha));
             return "redirect:/os/" + id;
         }
-
         try {
             osService.mudarStatus(id, status);
             String msg = "Status atualizado para " + status.getDescricao() + ".";
-            if (status == StatusOS.CONCLUIDA) {
-                msg += " Avise o cliente pelo botão verde de WhatsApp.";
-            }
+            if (status == StatusOS.CONCLUIDA) msg += " Avise o cliente pelo botão de WhatsApp.";
             redirect.addFlashAttribute("mensagem", msg);
         } catch (IllegalArgumentException ex) {
             redirect.addFlashAttribute("erro", ex.getMessage());
@@ -271,10 +264,9 @@ public class OrdemServicoController {
     // ---------- EXCLUIR (exige a senha) ----------
     @PostMapping("/{id}/excluir")
     public String excluir(@PathVariable("id") Long id,
-            @RequestParam(value = "senha", required = false) String senha,
-            RedirectAttributes redirect) {
+            @RequestParam(value = "senha", required = false) String senha, RedirectAttributes redirect) {
         if (!senhaOk(senha)) {
-            redirect.addFlashAttribute("erro", "Para excluir a OS: " + erroSenha());
+            redirect.addFlashAttribute("erro", "Para excluir a OS: " + erroSenha(senha));
             return "redirect:/os/" + id;
         }
         try {
@@ -289,8 +281,7 @@ public class OrdemServicoController {
 
     // ---------- PEÇAS ----------
     @PostMapping("/{id}/pecas")
-    public String adicionarPeca(@PathVariable("id") Long id,
-            @RequestParam("codigo") String codigo,
+    public String adicionarPeca(@PathVariable("id") Long id, @RequestParam("codigo") String codigo,
             @RequestParam(value = "quantidade", defaultValue = "1") Integer quantidade,
             RedirectAttributes redirect) {
         try {
@@ -322,12 +313,9 @@ public class OrdemServicoController {
         model.addAttribute("equipamentos", equipamentos);
     }
 
-    private String montarLinkWhatsapp(OrdemServico os) {
-        if (os.getEquipamento().getCliente() == null) return null;
-        String fone = telefoneWhatsapp(os.getEquipamento().getCliente().getTelefone());
-        if (fone == null) return null;
-
-        String nome = os.getEquipamento().getCliente().getNome();
+    // Mensagem de aviso para o WhatsApp
+    private String textoAviso(OrdemServico os) {
+        String nome = os.getEquipamento().getCliente() == null ? "" : os.getEquipamento().getCliente().getNome();
         String primeiro = nome == null ? "" : nome.trim().split("\\s+")[0];
 
         StringBuilder msg = new StringBuilder();
@@ -346,8 +334,14 @@ public class OrdemServicoController {
                     .append(ate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append(".");
         }
         msg.append(" Qualquer dúvida, é só responder esta mensagem.");
+        return msg.toString();
+    }
 
-        String texto = URLEncoder.encode(msg.toString(), StandardCharsets.UTF_8).replace("+", "%20");
+    private String montarLinkWhatsapp(OrdemServico os) {
+        if (os.getEquipamento().getCliente() == null) return null;
+        String fone = telefoneWhatsapp(os.getEquipamento().getCliente().getTelefone());
+        if (fone == null) return null;
+        String texto = URLEncoder.encode(textoAviso(os), StandardCharsets.UTF_8).replace("+", "%20");
         return "https://wa.me/" + fone + "?text=" + texto;
     }
 

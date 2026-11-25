@@ -27,4 +27,5 @@ public interface MovimentoEstoqueRepository extends JpaRepository<MovimentoEstoq
             where m.item.id = :itemId and m.osId = :osId
             """)
     Long usoLiquidoDaOs(@Param("itemId") Long itemId, @Param("osId") Long osId);
+        void deleteByItemId(Long itemId);
 }

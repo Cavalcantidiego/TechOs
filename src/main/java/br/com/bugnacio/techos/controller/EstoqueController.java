@@ -227,17 +227,18 @@ public class EstoqueController {
         return "estoque/historico";
     }
 
-    // ---------- EXCLUIR ----------
-    // Peça com histórico ou reserva não pode ser apagada (o banco protege a rastreabilidade).
+        // ---------- EXCLUIR (apaga o item e o histórico dele) ----------
+    // Se o item já foi usado em uma OS, o banco recusa e nada é apagado.
     @PostMapping("/{id}/excluir")
     public String excluir(@PathVariable("id") Long id, RedirectAttributes redirect) {
         try {
-            repo.deleteById(id);
-            repo.flush();
+            estoqueService.excluirDefinitivo(id);
             redirect.addFlashAttribute("mensagem", "Item excluído.");
         } catch (DataIntegrityViolationException ex) {
             redirect.addFlashAttribute("erro",
-                    "Este item tem histórico de movimentação e não pode ser excluído.");
+                    "Este item foi usado em uma OS e não pode ser excluído. Use Inativar.");
+        } catch (IllegalArgumentException ex) {
+            redirect.addFlashAttribute("erro", ex.getMessage());
         }
         return "redirect:/estoque";
     }

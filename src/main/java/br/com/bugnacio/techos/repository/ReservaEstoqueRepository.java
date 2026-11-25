@@ -24,4 +24,5 @@ public interface ReservaEstoqueRepository extends JpaRepository<ReservaEstoque, 
     // Total geral reservado (para o painel)
     @Query("select coalesce(sum(r.quantidade), 0) from ReservaEstoque r")
     Long totalGeralReservado();
+    void deleteByItemId(Long itemId);
 }

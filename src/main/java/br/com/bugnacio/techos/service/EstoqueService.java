@@ -16,8 +16,9 @@ import br.com.bugnacio.techos.repository.ReservaEstoqueRepository;
 /**
  * ÚNICO lugar que altera quantidades do estoque. Todo método grava o histórico.
  *
- * Uso pela tela de estoque:  entrada(...)
- * Uso FUTURO pela OS:        reservar(...), liberarReserva(...), baixarParaOs(...), devolverDaOs(...)
+ * Uso pela tela de estoque: entrada(...)
+ * Uso FUTURO pela OS: reservar(...), liberarReserva(...), baixarParaOs(...),
+ * devolverDaOs(...)
  *
  * Não existe saída sem OS: baixarParaOs exige o osId.
  */
@@ -93,8 +94,10 @@ public class EstoqueService {
         return item;
     }
 
-    // A peça foi usada na OS: sai do estoque. Consome primeiro a reserva da própria OS.
-    // Se a OS não reservou (ou reservou menos), o restante precisa estar disponível.
+    // A peça foi usada na OS: sai do estoque. Consome primeiro a reserva da própria
+    // OS.
+    // Se a OS não reservou (ou reservou menos), o restante precisa estar
+    // disponível.
     @Transactional
     public ItemEstoque baixarParaOs(Long itemId, int qtd, Long osId, Long tecnicoId, String tecnicoNome) {
         exigirQuantidade(qtd);
@@ -129,7 +132,8 @@ public class EstoqueService {
         return item;
     }
 
-    // A peça volta ao estoque (OS reaberta/cancelada depois de usar). Limitada ao que a OS usou.
+    // A peça volta ao estoque (OS reaberta/cancelada depois de usar). Limitada ao
+    // que a OS usou.
     @Transactional
     public ItemEstoque devolverDaOs(Long itemId, int qtd, Long osId, Long tecnicoId, String tecnicoNome) {
         exigirQuantidade(qtd);
@@ -154,6 +158,17 @@ public class EstoqueService {
         return reservaRepo.totalReservado(itemId).intValue();
     }
 
+    // ---------- EXCLUIR (apaga a peça e o histórico dela) ----------
+    // Se a peça já foi usada em alguma OS, o banco recusa no flush e nada é
+    // apagado.
+    @Transactional
+    public void excluirDefinitivo(Long itemId) {
+        ItemEstoque item = buscar(itemId);
+        reservaRepo.deleteByItemId(itemId);
+        movRepo.deleteByItemId(itemId);
+        itemRepo.delete(item);
+        itemRepo.flush();
+    }
     // ---------- Internos ----------
 
     private ItemEstoque buscar(Long itemId) {
@@ -162,11 +177,13 @@ public class EstoqueService {
     }
 
     private void exigirQuantidade(int qtd) {
-        if (qtd < 1) throw new IllegalArgumentException("A quantidade deve ser maior que zero.");
+        if (qtd < 1)
+            throw new IllegalArgumentException("A quantidade deve ser maior que zero.");
     }
 
     private void exigirOs(Long osId) {
-        if (osId == null) throw new IllegalArgumentException("Informe a OS: toda saída precisa de uma OS.");
+        if (osId == null)
+            throw new IllegalArgumentException("Informe a OS: toda saída precisa de uma OS.");
     }
 
     private void registrar(ItemEstoque item, TipoMovimento tipo, int qtd, String motivo,

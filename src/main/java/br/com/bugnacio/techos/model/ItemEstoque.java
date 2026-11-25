@@ -67,6 +67,9 @@ public class ItemEstoque {
     @Digits(integer = 8, fraction = 2, message = "Preço inválido.")
     private BigDecimal precoVenda;
 
+    // true = item arquivado: some das listas e buscas, mas o histórico fica guardado.
+    private boolean inativo = false;
+
     // Reservado por OS abertas. Não vai para o banco: o controller preenche.
     @Transient
     private int reservado = 0;
@@ -118,6 +121,9 @@ public class ItemEstoque {
 
     public BigDecimal getPrecoVenda() { return precoVenda; }
     public void setPrecoVenda(BigDecimal precoVenda) { this.precoVenda = precoVenda; }
+
+    public boolean isInativo() { return inativo; }
+    public void setInativo(boolean inativo) { this.inativo = inativo; }
 
     public int getReservado() { return reservado; }
     public void setReservado(int reservado) { this.reservado = reservado; }

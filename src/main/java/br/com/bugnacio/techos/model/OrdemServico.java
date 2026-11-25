@@ -21,6 +21,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.ArrayList;
+import java.util.List;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+
 @Entity
 public class OrdemServico {
 
@@ -65,6 +71,11 @@ public class OrdemServico {
     @Max(value = 365, message = "A garantia pode ter no máximo 365 dias.")
     private Integer garantiaDias = 90;
 
+    // Fotos da OS. Ao excluir a OS, os anexos são apagados junto.
+    @OneToMany(mappedBy = "os", cascade = CascadeType.REMOVE)
+    @OrderBy("id ASC")
+    private List<AnexoOs> anexos = new ArrayList<>();
+
     // true = as peças já saíram do estoque (OS Concluída/Entregue)
     private boolean baixado = false;
 
@@ -74,40 +85,100 @@ public class OrdemServico {
 
     // Data final da garantia. Não vai para o banco.
     public LocalDate getGarantiaAte() {
-        if (dataConclusao == null || garantiaDias == null || garantiaDias <= 0) return null;
+        if (dataConclusao == null || garantiaDias == null || garantiaDias <= 0)
+            return null;
         return dataConclusao.toLocalDate().plusDays(garantiaDias);
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public Equipamento getEquipamento() { return equipamento; }
-    public void setEquipamento(Equipamento equipamento) { this.equipamento = equipamento; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getDefeito() { return defeito; }
-    public void setDefeito(String defeito) { this.defeito = defeito; }
+    public Equipamento getEquipamento() {
+        return equipamento;
+    }
 
-    public String getLaudo() { return laudo; }
-    public void setLaudo(String laudo) { this.laudo = laudo; }
+    public void setEquipamento(Equipamento equipamento) {
+        this.equipamento = equipamento;
+    }
 
-    public String getTecnicoNome() { return tecnicoNome; }
-    public void setTecnicoNome(String tecnicoNome) { this.tecnicoNome = tecnicoNome; }
+    public String getDefeito() {
+        return defeito;
+    }
 
-    public StatusOS getStatus() { return status; }
-    public void setStatus(StatusOS status) { this.status = status; }
+    public void setDefeito(String defeito) {
+        this.defeito = defeito;
+    }
 
-    public LocalDateTime getDataEntrada() { return dataEntrada; }
-    public void setDataEntrada(LocalDateTime dataEntrada) { this.dataEntrada = dataEntrada; }
+    public String getLaudo() {
+        return laudo;
+    }
 
-    public LocalDateTime getDataConclusao() { return dataConclusao; }
-    public void setDataConclusao(LocalDateTime dataConclusao) { this.dataConclusao = dataConclusao; }
+    public void setLaudo(String laudo) {
+        this.laudo = laudo;
+    }
 
-    public BigDecimal getValor() { return valor; }
-    public void setValor(BigDecimal valor) { this.valor = valor; }
+    public String getTecnicoNome() {
+        return tecnicoNome;
+    }
 
-    public Integer getGarantiaDias() { return garantiaDias; }
-    public void setGarantiaDias(Integer garantiaDias) { this.garantiaDias = garantiaDias; }
+    public void setTecnicoNome(String tecnicoNome) {
+        this.tecnicoNome = tecnicoNome;
+    }
 
-    public boolean isBaixado() { return baixado; }
-    public void setBaixado(boolean baixado) { this.baixado = baixado; }
+    public StatusOS getStatus() {
+        return status;
+    }
+
+    public void setStatus(StatusOS status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getDataEntrada() {
+        return dataEntrada;
+    }
+
+    public void setDataEntrada(LocalDateTime dataEntrada) {
+        this.dataEntrada = dataEntrada;
+    }
+
+    public LocalDateTime getDataConclusao() {
+        return dataConclusao;
+    }
+
+    public void setDataConclusao(LocalDateTime dataConclusao) {
+        this.dataConclusao = dataConclusao;
+    }
+
+    public BigDecimal getValor() {
+        return valor;
+    }
+
+    public void setValor(BigDecimal valor) {
+        this.valor = valor;
+    }
+
+    public Integer getGarantiaDias() {
+        return garantiaDias;
+    }
+
+    public void setGarantiaDias(Integer garantiaDias) {
+        this.garantiaDias = garantiaDias;
+    }
+
+    public boolean isBaixado() {
+        return baixado;
+    }
+
+    public void setBaixado(boolean baixado) {
+        this.baixado = baixado;
+    }
+
+    public List<AnexoOs> getAnexos() {
+        return anexos;
+    }
 }
