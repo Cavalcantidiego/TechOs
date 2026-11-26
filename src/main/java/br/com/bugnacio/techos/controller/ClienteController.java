@@ -16,114 +16,154 @@ import br.com.bugnacio.techos.model.Cliente;
 import br.com.bugnacio.techos.repository.ClienteRepository;
 import jakarta.validation.Valid;
 
-// @Controller: bean do Spring que recebe os pedidos (requisições) das telas.
+/*
+ * Controller responsável pelas operações de clientes.
+ * 
+ * Ele recebe as requisições da tela,
+ * conversa com o banco através do Repository
+ * e devolve as páginas para o usuário.
+ */
 @Controller
-// @RequestMapping na classe: início do endereço de TODOS os métodos daqui.
-// Ex.: http://localhost:8080/clientes
 @RequestMapping("/clientes")
 public class ClienteController {
 
-    // O controller precisa do repository para acessar o banco de dados.
+    // Responsável por acessar a tabela de clientes no banco.
     private final ClienteRepository repo;
 
-    // Injeção de dependência: o Spring cria o ClienteRepository
-    // e entrega pronto para o controller pelo construtor.
+    // Injeção de dependência.
+    // O Spring cria o Repository e entrega pronto para uso.
     public ClienteController(ClienteRepository repo) {
         this.repo = repo;
     }
 
-    // GET /clientes: mostra a lista de clientes.
-    // O parâmetro "busca" é opcional (ex.: /clientes?busca=maria).
+    /*
+     * Lista todos os clientes.
+     * Também permite pesquisar pelo nome usando o parâmetro "busca".
+     * 
+     * Exemplos:
+     * /clientes
+     * /clientes?busca=maria
+     */
     @GetMapping
     public String listar(
             @RequestParam(value = "busca", required = false) String busca,
             Model model) {
 
         if (busca != null && !busca.isBlank()) {
-            // Se digitou algo na busca, filtra pelo nome
-            // (contém o texto, sem diferenciar maiúscula de minúscula).
-            model.addAttribute("clientes", repo.findByNomeContainingIgnoreCase(busca));
+
+            // Busca clientes cujo nome contenha o texto informado.
+            model.addAttribute(
+                    "clientes",
+                    repo.findByNomeContainingIgnoreCase(busca));
+
         } else {
-            // Sem busca: traz todos os clientes ordenados por nome.
-            model.addAttribute("clientes", repo.findAll(Sort.by("nome")));
+
+            // Sem filtro: lista todos ordenados por nome.
+            model.addAttribute(
+                    "clientes",
+                    repo.findAll(Sort.by("nome")));
         }
 
-        // Devolve o texto da busca para a tela (para manter no campo de pesquisa).
+        // Mantém o texto da pesquisa preenchido na tela.
         model.addAttribute("busca", busca);
 
-        // Abre: src/main/resources/templates/clientes/lista.html
         return "clientes/lista";
     }
 
-    // GET /clientes/novo: mostra o formulário vazio para cadastrar um cliente.
+    /*
+     * Abre o formulário de cadastro.
+     */
     @GetMapping("/novo")
     public String novo(Model model) {
 
-        // Cliente vazio para o formulário preencher.
+        // Cria um objeto vazio para o formulário preencher.
         model.addAttribute("cliente", new Cliente());
 
-        // Abre: src/main/resources/templates/clientes/form.html
         return "clientes/form";
     }
 
-    // POST /clientes/salvar: recebe o formulário e salva no banco.
-    // @Valid: confere as regras do Cliente (ex.: nome obrigatório).
-    // BindingResult: guarda os erros de validação (precisa vir logo após o @Valid).
-    // RedirectAttributes: permite mandar mensagem para a próxima tela.
+    /*
+     * Salva um cliente novo ou atualiza um já existente.
+     * 
+     * @Valid executa as validações definidas na entidade Cliente.
+     * BindingResult recebe os possíveis erros encontrados.
+     */
     @PostMapping("/salvar")
-    public String salvar(@Valid Cliente cliente,
+    public String salvar(
+            @Valid Cliente cliente,
             BindingResult result,
             RedirectAttributes redirect) {
 
         boolean jaExiste;
 
         if (cliente.getId() == null) {
-            // Cliente novo: verifica se já existe alguém com esse telefone.
-            jaExiste = repo.existsByTelefone(cliente.getTelefone());
+
+            // Cadastro novo:
+            // verifica se o telefone já existe.
+            jaExiste = repo.existsByTelefone(
+                    cliente.getTelefone());
+
         } else {
-            // Edição: verifica se OUTRO cliente (id diferente) tem esse telefone.
+
+            // Edição:
+            // verifica se outro cliente já utiliza o telefone.
             jaExiste = repo.existsByTelefoneAndIdNot(
                     cliente.getTelefone(),
                     cliente.getId());
         }
 
         if (jaExiste) {
-            // Adiciona um erro no campo "telefone" para aparecer no formulário.
+
+            // Adiciona erro diretamente no campo telefone.
             result.rejectValue(
                     "telefone",
                     "duplicado",
                     "Já existe um cliente com esse telefone.");
         }
 
+        // Caso haja qualquer erro de validação,
+        // retorna ao formulário exibindo as mensagens.
         if (result.hasErrors()) {
-            // Se houver erro, volta para o formulário mostrando as mensagens.
             return "clientes/form";
         }
 
-        // Sem erros: grava no banco (insere se novo, atualiza se já existe).
+        /*
+         * save() funciona para inserir e atualizar.
+         * 
+         * Se o id for null:
+         * INSERT
+         * Se existir id:
+         * UPDATE
+         */
         repo.save(cliente);
 
-        // Mensagem exibida uma única vez na próxima tela.
         redirect.addFlashAttribute(
                 "mensagem",
                 "Cliente salvo com sucesso!");
 
-        // Redireciona para a lista de clientes.
         return "redirect:/clientes";
     }
 
-    // POST /clientes/{id}/excluir: apaga o cliente pelo id.
-    // @PathVariable: pega o {id} que vem na URL.
+    /*
+     * Exclui um cliente pelo ID.
+     */
     @PostMapping("/{id}/excluir")
-    public String excluir(@PathVariable Long id,
+    public String excluir(
+            @PathVariable Long id,
             RedirectAttributes attributes) {
 
         try {
-            // Remove o cliente do banco.
+
+            // Solicita a exclusão do cliente.
             repo.deleteById(id);
 
-            // flush: força o banco a validar AGORA, dentro do try.
-            // Sem isso, o erro só apareceria depois e o catch não pegaria.
+            /*
+             * Flush força o Hibernate a executar a operação
+             * imediatamente no banco.
+             * 
+             * Isso permite capturar erros de integridade
+             * dentro deste bloco try/catch.
+             */
             repo.flush();
 
             attributes.addFlashAttribute(
@@ -131,7 +171,14 @@ public class ClienteController {
                     "Cliente excluído com sucesso!");
 
         } catch (DataIntegrityViolationException ex) {
-            // O banco recusou: o cliente tem equipamentos vinculados.
+
+            /*
+             * O banco impediu a exclusão porque
+             * existem registros relacionados.
+             *
+             * Exemplo:
+             * Cliente possui equipamentos cadastrados.
+             */
             attributes.addFlashAttribute(
                     "erro",
                     "Este cliente possui equipamentos cadastrados e não pode ser excluído. "
@@ -141,15 +188,19 @@ public class ClienteController {
         return "redirect:/clientes";
     }
 
-    // GET /clientes/{id}/editar: abre o formulário preenchido com os dados do
-    // cliente.
+    /*
+     * Carrega um cliente existente para edição.
+     */
     @GetMapping("/{id}/editar")
-    public String editar(@PathVariable Long id, Model model) {
+    public String editar(
+            @PathVariable Long id,
+            Model model) {
 
-        // Busca o cliente no banco; se não achar, lança erro.
+        // Busca o cliente no banco.
+        // Caso não encontre, lança exceção.
         Cliente cliente = repo.findById(id).orElseThrow();
 
-        // Envia o cliente para a tela preencher os campos.
+        // Envia os dados para preencher o formulário.
         model.addAttribute("cliente", cliente);
 
         return "clientes/form";

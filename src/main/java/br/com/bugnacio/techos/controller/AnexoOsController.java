@@ -23,6 +23,11 @@ import br.com.bugnacio.techos.repository.AnexoOsRepository;
 import br.com.bugnacio.techos.repository.OrdemServicoRepository;
 import br.com.bugnacio.techos.service.AnexoOsService;
 
+/*
+ * Controller responsável pelos anexos (fotos) de uma Ordem de Serviço.
+ * Todas as rotas começam com:
+ * /os/{osId}/anexos
+ */
 @Controller
 @RequestMapping("/os/{osId}/anexos")
 public class AnexoOsController {
@@ -31,56 +36,122 @@ public class AnexoOsController {
     private final OrdemServicoRepository osRepo;
     private final AnexoOsService anexoService;
 
-    public AnexoOsController(AnexoOsRepository anexoRepo, OrdemServicoRepository osRepo,
+    // Injeção de dependências
+    public AnexoOsController(
+            AnexoOsRepository anexoRepo,
+            OrdemServicoRepository osRepo,
             AnexoOsService anexoService) {
+
         this.anexoRepo = anexoRepo;
         this.osRepo = osRepo;
         this.anexoService = anexoService;
     }
 
+    /*
+     * Recebe os arquivos enviados pelo formulário
+     * e vincula à OS informada.
+     */
     @PostMapping
-    public String enviar(@PathVariable("osId") Long osId,
-            @RequestParam("arquivos") List<MultipartFile> arquivos, RedirectAttributes redirect) {
+    public String enviar(
+            @PathVariable("osId") Long osId,
+            @RequestParam("arquivos") List<MultipartFile> arquivos,
+            RedirectAttributes redirect) {
 
+        // Busca a OS no banco
         OrdemServico os = osRepo.findById(osId).orElse(null);
+
+        // Se a OS não existir, retorna para a listagem
         if (os == null) {
             redirect.addFlashAttribute("erro", "OS não encontrada.");
             return "redirect:/os";
         }
+
         try {
+
+            // Delega toda a validação e gravação para o Service
             AnexoOsService.Resultado r = anexoService.salvar(os, arquivos);
-            if (r.salvos() > 0) redirect.addFlashAttribute("mensagem", r.salvos() + " foto(s) enviada(s).");
-            if (!r.recusados().isEmpty()) {
-                redirect.addFlashAttribute("erro", "Não enviado(s): " + String.join(", ", r.recusados())
-                        + ". Aceitamos JPG, PNG, WEBP e GIF (máximo " + AnexoOsService.MAX_POR_OS + " fotos por OS).");
+
+            // Mensagem de sucesso
+            if (r.salvos() > 0) {
+                redirect.addFlashAttribute(
+                        "mensagem",
+                        r.salvos() + " foto(s) enviada(s).");
             }
+
+            // Informa quais arquivos foram recusados
+            if (!r.recusados().isEmpty()) {
+                redirect.addFlashAttribute(
+                        "erro",
+                        "Não enviado(s): "
+                                + String.join(", ", r.recusados())
+                                + ". Aceitamos JPG, PNG, WEBP e GIF (máximo "
+                                + AnexoOsService.MAX_POR_OS
+                                + " fotos por OS).");
+            }
+
         } catch (IllegalStateException ex) {
+
+            // Erros de regra de negócio
             redirect.addFlashAttribute("erro", ex.getMessage());
         }
+
+        // Volta para a tela da OS
         return "redirect:/os/" + osId;
     }
 
-    // Mostra a foto
+    /*
+     * Exibe uma foto anexada à OS.
+     * Exemplo:
+     * /os/10/anexos/5
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<Resource> ver(@PathVariable("osId") Long osId, @PathVariable("id") Long id) {
-        AnexoOs a = anexoRepo.findByIdAndOsId(id, osId).orElse(null);
-        if (a == null) return ResponseEntity.notFound().build();
+    public ResponseEntity<Resource> ver(
+            @PathVariable("osId") Long osId,
+            @PathVariable("id") Long id) {
 
-        Path arquivo = AnexoOs.PASTA.resolve(a.getArquivo()).normalize();
+        // Busca o anexo garantindo que pertence à OS informada
+        AnexoOs a = anexoRepo.findByIdAndOsId(id, osId).orElse(null);
+
+        if (a == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Monta o caminho físico do arquivo
+        Path arquivo = AnexoOs.PASTA
+                .resolve(a.getArquivo())
+                .normalize();
+
+        /*
+         * Segurança:
+         * - verifica se o arquivo continua dentro da pasta permitida
+         * - verifica se existe fisicamente no disco
+         */
         if (!arquivo.startsWith(AnexoOs.PASTA) || !Files.exists(arquivo)) {
             return ResponseEntity.notFound().build();
         }
+
+        // Retorna a imagem para o navegador
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(a.getTipoMime()))
                 .header("X-Content-Type-Options", "nosniff")
                 .body(new FileSystemResource(arquivo));
     }
 
+    /*
+     * Remove um anexo da OS.
+     */
     @PostMapping("/{id}/excluir")
-    public String excluir(@PathVariable("osId") Long osId, @PathVariable("id") Long id,
+    public String excluir(
+            @PathVariable("osId") Long osId,
+            @PathVariable("id") Long id,
             RedirectAttributes redirect) {
-        anexoRepo.findByIdAndOsId(id, osId).ifPresent(anexoRepo::delete);
+
+        // Exclui apenas se o anexo pertencer à OS informada
+        anexoRepo.findByIdAndOsId(id, osId)
+                .ifPresent(anexoRepo::delete);
+
         redirect.addFlashAttribute("mensagem", "Foto removida.");
+
         return "redirect:/os/" + osId;
     }
 }

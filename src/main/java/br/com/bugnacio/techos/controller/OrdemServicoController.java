@@ -25,11 +25,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import br.com.bugnacio.techos.repository.EquipamentoRepository;
 
 import br.com.bugnacio.techos.model.Equipamento;
 import br.com.bugnacio.techos.model.OrdemServico;
 import br.com.bugnacio.techos.model.StatusOS;
-import br.com.bugnacio.techos.repository.EquipamentoRepository;
 import br.com.bugnacio.techos.repository.OrdemServicoRepository;
 import br.com.bugnacio.techos.repository.PecaUsadaRepository;
 import br.com.bugnacio.techos.service.AnexoOsService;
